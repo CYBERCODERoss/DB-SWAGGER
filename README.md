@@ -1,120 +1,180 @@
 # Database Intrusion Detection System
 
-An ML-powered system for detecting and preventing database intrusions, implementing identity-based access control and anomaly detection using unsupervised machine learning.
+An ML-powered system for detecting and preventing database intrusions using identity-based access control and machine learning.
 
-## Features
+## Step-by-Step Setup and Usage Guide
 
-- Identity-based access control with department-specific permissions
-- Machine learning-based anomaly detection for SQL queries
-- Real-time query validation and logging
-- Role-based access control (Admin/User)
-- Swagger UI documentation
-- Token-based authentication
+### 1. Installation
 
-## Installation
-
-1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd database-ids
-```
-
-2. Create a virtual environment and activate it:
-```bash
+# Create virtual environment
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
 
-3. Install dependencies:
-```bash
+# Activate virtual environment
+# On Windows:
+venv\Scripts\activate
+# On Linux/Mac:
+source venv/bin/activate
+
+# Install dependencies
 pip install -r requirements.txt
-```
 
-## Usage
-
-1. Start the server:
-```bash
+# Start the server
 uvicorn app.main:app --reload
 ```
 
-2. Access the Swagger documentation at: http://localhost:8000/docs
+### 2. Access Swagger UI
+Open your browser and navigate to: http://localhost:8000/docs
 
-## API Endpoints
+### 3. Create Admin User
+First, create an admin user using the `POST /users/` endpoint:
+```json
+{
+    "username": "admin",
+    "email": "admin@example.com",
+    "password": "admin123",
+    "department": "IT",
+    "is_admin": true
+}
+```
 
-### Authentication
-- `POST /token`: Get access token (login)
+### 4. Get Admin Token
+Use the `POST /token` endpoint to get an access token:
+- Username: admin
+- Password: admin123
 
-### User Management
-- `POST /users/`: Create new user
+Save the received token for subsequent requests.
 
-### Permissions
-- `POST /permissions/`: Create department permissions (Admin only)
+### 5. Set Up Department Permissions
+Use the `POST /permissions/` endpoint with admin token:
+```json
+{
+    "department": "IT",
+    "allowed_operations": ["SELECT", "INSERT", "UPDATE", "DELETE"],
+    "allowed_tables": ["accounts", "users", "transactions"]
+}
+```
 
-### Query Management
-- `POST /query/`: Execute and validate SQL query
-- `POST /train/`: Train anomaly detection model (Admin only)
+Additional department example:
+```json
+{
+    "department": "finance",
+    "allowed_operations": ["SELECT", "INSERT"],
+    "allowed_tables": ["transactions", "accounts"]
+}
+```
 
-## Example Usage
-
-1. Create a user:
-```bash
-curl -X POST "http://localhost:8000/users/" -H "Content-Type: application/json" -d '{
-    "username": "john_doe",
-    "email": "john@example.com",
-    "password": "secret123",
+### 6. Create Regular Users
+Create regular users for different departments:
+```json
+{
+    "username": "john_finance",
+    "email": "john@finance.com",
+    "password": "john123",
     "department": "finance",
     "is_admin": false
-}'
+}
 ```
 
-2. Get access token:
-```bash
-curl -X POST "http://localhost:8000/token" -d "username=john_doe&password=secret123"
+### 7. Execute Queries
+Use the `POST /query/` endpoint to execute queries. Here are examples for different operations:
+
+#### SELECT Queries:
+```json
+{
+    "query": "SELECT * FROM accounts WHERE balance > 1000"
+}
 ```
 
-3. Create department permissions (as admin):
-```bash
-curl -X POST "http://localhost:8000/permissions/" \
-    -H "Authorization: Bearer <your-token>" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "department": "finance",
-        "allowed_operations": ["SELECT", "INSERT"],
-        "allowed_tables": ["transactions", "accounts"]
-    }'
+```json
+{
+    "query": "SELECT * FROM transactions WHERE amount > 500"
+}
 ```
 
-4. Execute a query:
-```bash
-curl -X POST "http://localhost:8000/query/" \
-    -H "Authorization: Bearer <your-token>" \
-    -H "Content-Type: application/json" \
-    -d '{
-        "query": "SELECT * FROM transactions WHERE amount > 1000"
-    }'
+#### INSERT Queries:
+```json
+{
+    "query": "INSERT INTO accounts (customer_id, account_number, balance, account_type) VALUES (1001, 'ACC123456', 5000.00, 'savings')"
+}
 ```
 
-## Security Features
+```json
+{
+    "query": "INSERT INTO transactions (account_id, amount, transaction_type) VALUES (1001, 1500.00, 'deposit')"
+}
+```
 
-1. **Identity-Based Access Control**
-   - Department-specific permissions
-   - Role-based access (Admin/User)
-   - Token-based authentication
+#### UPDATE Queries:
+```json
+{
+    "query": "UPDATE accounts SET balance = balance + 1000 WHERE account_id = 1001"
+}
+```
 
-2. **Machine Learning Anomaly Detection**
-   - Unsupervised learning (Isolation Forest & DBSCAN)
-   - Feature extraction from SQL queries
-   - Continuous model training
+### 8. Train the Model
+After executing several legitimate queries, use the `POST /train/` endpoint to train the anomaly detection model.
 
-3. **Query Validation**
-   - Permission-based validation
-   - Anomaly detection
-   - Query logging
+### Example Scenarios
 
-## Contributing
+1. **Valid Query (Should Succeed)**:
+```json
+{
+    "query": "SELECT * FROM accounts WHERE customer_id = 123"
+}
+```
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a new Pull Request 
+2. **Anomalous Query (Should be Blocked)**:
+```json
+{
+    "query": "SELECT * FROM accounts; DROP TABLE accounts;"
+}
+```
+
+3. **Unauthorized Table Access (Should be Blocked)**:
+```json
+{
+    "query": "SELECT * FROM admin_logs"
+}
+```
+
+## Security Features in Action
+
+1. **Permission Validation**:
+- Queries are checked against department permissions
+- Only allowed operations on allowed tables are permitted
+
+2. **Anomaly Detection**:
+- ML model learns from normal query patterns
+- Flags suspicious queries that deviate from normal patterns
+
+3. **Query Logging**:
+- All queries are logged for audit purposes
+- Logs are used to train the ML model
+
+## Common Issues and Solutions
+
+1. "No permissions found for department"
+   - Ensure department permissions are set up using POST /permissions/
+
+2. "Access to this table is not allowed"
+   - Check if the table is in the department's allowed_tables list
+
+3. "No training data available"
+   - Execute more legitimate queries before training the model
+
+## Security Best Practices
+
+1. Change the default SECRET_KEY in production
+2. Use strong passwords for admin accounts
+3. Regularly review and update department permissions
+4. Periodically retrain the ML model with new data
+5. Monitor query logs for suspicious patterns
+
+## API Endpoints Summary
+
+- `POST /token`: Get access token
+- `POST /users/`: Create new user
+- `POST /permissions/`: Set department permissions
+- `POST /query/`: Execute SQL queries
+- `POST /train/`: Train anomaly detection model

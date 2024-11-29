@@ -1,0 +1,58 @@
+site_name: Database Intrusion Detection System
+site_description: ML-powered system for detecting and preventing database intrusions
+site_author: Your Name
+repo_url: https://github.com/yourusername/database-ids
+repo_name: database-ids
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Setup Guide:
+    - Installation: '#step-by-step-setup-and-usage-guide'
+    - Configuration: '#security-best-practices'
+  - Usage:
+    - Creating Users: '#create-admin-user'
+    - Managing Permissions: '#set-up-department-permissions'
+    - Executing Queries: '#execute-queries'
+  - Examples:
+    - Query Examples: '#example-scenarios'
+    - Common Issues: '#common-issues-and-solutions'
+  - API Reference: '#api-endpoints-summary'
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - footnotes
+
+plugins:
+  - search
+  - tags 
